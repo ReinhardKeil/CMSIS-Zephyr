@@ -6,7 +6,7 @@ This repository contains two basic Zephyr examples configured in the [`zephyr.cs
 
 The [Arm CMSIS Debugger](https://marketplace.visualstudio.com/items?itemName=Arm.vscode-cmsis-debugger) provides kernel-aware debugging and views for device peripherals, including the interrupt system. It is used to download and run the application on target hardware.
 
-pyOCD supports with RTT and SystemView the analysis of the run-time behavior in CI workflows.
+pyOCD supports runtime behavior analysis in CI workflows using RTT and SystemView.
 
 Overall, Zephyr development is simplified by managing different build configurations, using an intuitive project tree, supporting multi-core configurations, and providing smart editor features such as code completion.
 
@@ -41,10 +41,10 @@ If you use a different board, extend the [`zephyr.csolution.yml`](zephyr.csoluti
   target-types:
     - type: SpecifyName
       board: Vendor::Board_name      # Vendor is optional
-      device: Vendor::Device_name    # Vendor and Devicename is optional 
+      device: Vendor::Device_name    # Vendor and device name are optional
 ```
 
-To find the packs open [https://www.keil.arm.com/boards/](https://www.keil.arm.com/boards/) and search for your board.
+To find the packs, open [https://www.keil.arm.com/boards/](https://www.keil.arm.com/boards/) and search for your board.
 
 - `pack: Vendor::BSP` is listed under CMSIS Pack on the [Board](https://www.keil.arm.com/boards/) page.
 - `pack: Vendor::DFP` is listed under CMSIS Pack on the related [Device](https://www.keil.arm.com/devices/) page.
@@ -53,7 +53,7 @@ To find the packs open [https://www.keil.arm.com/boards/](https://www.keil.arm.c
 
 Frequently the [Zephyr board name](https://docs.zephyrproject.org/latest/boards/index.html#) does not match. In this case add the variable `west-board:` as shown below.
 
-Use [Zephyr - Supported Boards and Shields](https://docs.zephyrproject.org/latest/boards/index) and find your board. Under **Supported Features** the `board_name`, `board_name/soc_name` or `board_name/soc_name/core_name` is listed that is the specified with `west-board:` .
+Use [Zephyr - Supported Boards and Shields](https://docs.zephyrproject.org/latest/boards/index) and find your board. Under **Supported Features** the `board_name`, `board_name/soc_name` or `board_name/soc_name/core_name` is listed; this is what you specify with `west-board:`.
 
 ```yml
   target-types:
@@ -68,7 +68,7 @@ Use [Zephyr - Supported Boards and Shields](https://docs.zephyrproject.org/lates
 
 ![ZephyrTerminal](./images/ZephyrTerminal.png)
 
-Keil Studio includes a built-in **Zephyr Terminal** for running `west` commands in the IDE. When you open it, it configures for the selected project with the working directory and Zephyr environment.
+Keil Studio includes a built-in **Zephyr Terminal** for running `west` commands in the IDE. When you open it, it configures the working directory and Zephyr environment for the selected project.
 
 **Example `west` commands:**
 
@@ -85,15 +85,33 @@ west build -t ram_report
 
 ## RTT and SEGGER SystemView
 
-SEGGER Real-Time Transfer (RTT) enables real-time data exchange between a target device and a host debugger without requiring an additional UART interface. RTT also is the transport mechanism used for SystemView.
+SEGGER Real-Time Transfer (RTT) enables real-time data exchange between a target device and a host debugger without requiring an additional UART interface. RTT is also the transport mechanism used for SystemView.
 
-RTT and SystemView is integrated in Zephyr and enabled in the [`zephyr.csolution.yml`](zephyr.csolution.yml) file with the `west-defs` under the `build-type: Debug-RTT`. RTT and SystemView are currently implemented for CI testing and can be used with pyOCD as shown below. 
+RTT and SystemView are integrated in Zephyr and enabled in the [`zephyr.csolution.yml`](zephyr.csolution.yml) file with the `west-defs` under the `build-type: Debug-RTT`. RTT and SystemView are currently used for CI testing and can be used with pyOCD as shown below.
 
-**Example invocation for `target-type: STM32H7B3I-DK`:
+**Example invocation for `target-type: STM32H7B3I-DK`:**
 
 ```bash
 pyocd load --cbuild-run <path>\out\zephyr+STM32H7B3I-DK.cbuild-run.yml
 pyocd run  --cbuild-run <path>\out\zephyr+STM32H7B3I-DK.cbuild-run.yml
 ```
 
-The pyOCD `run command` outputs now test messages to the debug console and collects the file `out\zephyr+STM32H7B3I-DK.SVdat` that can be analyzed with [SEGGER SystemView](https://www.segger.com/products/development-tools/systemview/).
+The pyOCD `run` command now outputs test messages to the debug console and collects the file `out\zephyr+STM32H7B3I-DK.SVdat`, which can be analyzed with [SEGGER SystemView](https://www.segger.com/products/development-tools/systemview/).
+
+## CI Test Automation
+
+This repository demonstrates a hybrid CI approach: build steps run on GitHub-hosted runners, while hardware execution runs on a self-hosted Raspberry Pi 5 (RPi5) runner connected to a NUCLEO board.
+
+The [CI workflow](./.github/workflows) is split into two parts:
+
+- [Build_NUCLEO-H563ZI.yaml](./.github/workflows/Build_NUCLEO-H563ZI.yaml) compiles the selected Zephyr application and produces build outputs that can be consumed by the run workflow.
+- [Run_NUCLEO-H563ZI.yaml](./.github/workflows/Run_NUCLEO-H563ZI.yaml) executes on the self-hosted RPi5 runner and uses an attached debug probe to download and execute the image on the target board.
+
+The run workflow uses pyOCD to flash and run the application. To avoid duplicating board configuration in multiple places, the workflow relies on the generated `*.cbuild-run.yml` file for target information and uses the ID of the connected debug adapter to select the correct probe. Refer to the [CMSIS-Toolbox - Run and Debug Configuration](https://open-cmsis-pack.github.io/cmsis-toolbox/build-overview/#run-and-debug-configuration) for more information.
+
+In the [GitHub Actions view of Run_NUCLEO-H563ZI.yaml](https://github.com/Arm-Examples/CMSIS-Zephyr/actions/workflows/Run_NUCLEO-H563ZI.yaml), you can review the test results:
+
+- The application output is visible in the action log (for example via RTT-based console output).
+- The workflow uploads a SEGGER SystemView trace (`*.SVdat`) as an artifact. This execution trace can be downloaded and analyzed offline.
+
+See [Setup Self-Hosted GitHub Runner on Raspberry Pi 5](https://github.com/Arm-Examples/.github/blob/main/profile/RPI_GH_Runner.md) for details on configuring the self-hosted runner. It explains installing pyOCD and the required DFP and BSP packs for connecting to the target hardware.
