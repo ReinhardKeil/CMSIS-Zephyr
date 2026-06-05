@@ -16,6 +16,8 @@
 
 name: Build NUCLEO-H563ZI Debug HIL
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
   
 jobs:
