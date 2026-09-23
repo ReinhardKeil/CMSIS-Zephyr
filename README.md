@@ -1,4 +1,4 @@
-# Using Zephyr with Keil Studio and Arm CMSIS Debugger
+# Zephyr Integration with CMSIS-Toolbox
 
 [<img src="./images/preview.png" alt="Overview of Zephyr capabilities in Keil Studio" width="330" height="205" align="left">](https://armkeil.blob.core.windows.net/developer/Files/videos/KeilStudio/CMSIS-Zephyr.mp4 "Overview of Zephyr capabilities in Keil Studio")
 
@@ -10,13 +10,29 @@ pyOCD supports runtime behavior analysis in CI workflows using RTT and SystemVie
 
 Overall, Zephyr development is simplified by managing different build configurations, using an intuitive project tree, supporting multi-core configurations, and providing smart editor features such as code completion.
 
-## Quick start
+## CMSIS-Toolbox Integration
+
+Zephyr and West remain responsible for configuring and building the Zephyr application. The [`zephyr.csolution.yml`](./zephyr.csolution.yml) file adds [common project information](https://open-cmsis-pack.github.io/cmsis-toolbox/overview/#common-project-information-for-the-development-workflow) for the selectable application configurations and their target hardware.
+
+CMSIS-Toolbox uses the same common project information in VS Code, command-line, and CI/DevOps workflows. CMSIS Packs provide device and board data that complements the Zephyr build information with programming, run, and debug configuration, peripheral views, and trace configuration. Generated files such as `compile_commands.json` and `*.cbuild-run.yml` connect smart editor features, static code analysis and test tools, target deployment, and trace to the application development workflow without replacing Zephyr or West.
+
+## VS Code quick start
 
 1. Install [Keil Studio for VS Code](https://marketplace.visualstudio.com/items?itemName=Arm.keil-studio-pack) from the VS Code marketplace.
 2. Follow the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) and install Zephyr in the directory `$HOME/zephyrproject`.
 3. Clone this repository (for example using [Git in VS Code](https://code.visualstudio.com/docs/sourcecontrol/intro-to-git)) or download the ZIP file. Then open the repository folder in VS Code.
 4. In VS Code, open the [CMSIS View](https://mdk-packs.github.io/vscode-cmsis-solution-docs/userinterface.html#2-main-area-of-the-cmsis-view) and then the [Manage Solution dialog](https://github.com/Open-CMSIS-Pack/vscode-cmsis-solution#manage-solution-view) to select the target board and one project.
 5. In the CMSIS view, use the [Action buttons](https://github.com/Open-CMSIS-Pack/vscode-cmsis-solution#action-buttons) to build, load, and debug the example on your hardware.
+
+## Command-line build
+
+Install [CMSIS-Toolbox](https://open-cmsis-pack.github.io/cmsis-toolbox/installation/), the required compiler, and a [Zephyr workspace](https://docs.zephyrproject.org/latest/develop/getting_started/index.html). Ensure that the Zephyr environment is active, then run for example:
+
+```bash
+cbuild zephyr.csolution.yml --packs --active NUCLEO-H563ZI
+```
+
+The command uses the same common project information as VS Code and invokes West to build the selected Zephyr application. Refer to [West Build System Integration](https://open-cmsis-pack.github.io/cmsis-toolbox/build-overview/#west-build-system-integration) for details.
 
 > [!CAUTION]
 > If you see errors during `west build` (for example during `generating a build system`), the `west` installation or `PATH` is likely incorrect. Check [Settings](https://code.visualstudio.com/docs/configure/settings) - **Cmsis-Csolution:** Environment Variables.
